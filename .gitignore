@@ -1,0 +1,6 @@
+node_modules
+debug
+.env
+assets.json
+error.log
+output.log

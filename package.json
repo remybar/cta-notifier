@@ -1,0 +1,21 @@
+{
+  "name": "cta-notifier",
+  "version": "1.0.0",
+  "description": "Notify when an interesting CTA asset is sold on the IMX marketplace",
+  "main": "cta-notifier.js",
+  "scripts": {
+    "run": "node cta-notifier"
+  },
+  "author": "Rémy Baranx <remy.baranx@proton.me>",
+  "license": "ISC",
+  "dependencies": {
+    "@imtbl/core-sdk": "^1.0.0",
+    "@imtbl/wallet-sdk-web": "^0.1.12",
+    "big.js": "^6.2.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "keccak256": "^1.0.6",
+    "node-notifier": "^10.0.1",
+    "winston": "^3.8.2"
+  }
+}
