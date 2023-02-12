@@ -8,18 +8,7 @@ const Big = require("big.js");
 const notifier = require("node-notifier");
 const path = require("path");
 
-const keccak256 = require("keccak256");
-
 const { ImmutableX, Config } = require("@imtbl/core-sdk");
-
-/**
- * TODO:
- * - adapter le fichier assets.json en fonction de la structure de données CTA
- * - adapter TOKEN_ADDRESS pour CTA
- * - calculer la clé à partir du nom + puissance + foil (+ arkhome ?)
- * - ajuster la période de refresh
- * - être sûr de tout lire ? (peut-etre lire jusqu'à ce que 'cursor' soit undefined et skipper les update dans que la derniere est en cours ?)
- */
 
 /**
  * CONSTANTS
@@ -40,20 +29,15 @@ const TOKEN_INFO = new Map([
     "USDC",
     {
       type: "ERC20",
+      decimals: 6,
       address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-    },
-  ],
-  [
-    "GODS",
-    {
-      type: "ERC20",
-      address: "0xccc8cb5229b0ac8069c51fd58367fd1e622afd97",
     },
   ],
   [
     "ETH",
     {
       type: "ETH",
+      decimals: 18,
       address: "NOT_USED",
     },
   ],
@@ -100,10 +84,11 @@ const getTokenName = (order) => {
   }
 };
 
-const getOrderAmount = (order) => {
-  const buyData = order?.buy?.data;
-  const rawAmount = Big(buyData.quantity_with_fees);
-  return rawAmount.div(Big(10).pow(buyData.decimals)).toString();
+/**
+ *
+ */
+const toHumanAmount = (rawAmount, decimals) => {
+  return Big(rawAmount).div(Big(10).pow(decimals)).toNumber();
 };
 
 /**
@@ -111,9 +96,9 @@ const getOrderAmount = (order) => {
  * @param attributes
  */
 const getAssetKeyFromAttributes = (attributes) => {
-  // TODO: adapt for CTA using name + foil + power, etc ...
-  // maybe use keccak256 to build a hash ?
-  return attributes.name;
+  // As there is no information about the card in the offer, just use the url to
+  // match the card (foil are not managed :/)
+  return attributes.image_filename;
 };
 
 /**
@@ -121,14 +106,15 @@ const getAssetKeyFromAttributes = (attributes) => {
  * @param attributes
  */
 const getAssetKeyFromOrder = (order) => {
-  return order?.sell?.data?.properties?.name;
+  const url = order?.sell?.data?.properties?.image_url;
+  return url.substring(url.lastIndexOf("/") + 1);
 };
 
 /**
  * Prepare a price structure to be able to compare with order prices.
  */
 const preparePrice = (price) => {
-  const { type, address } = TOKEN_INFO.get(price.token);
+  const { type, address, _ } = TOKEN_INFO.get(price.token);
   return {
     name: price.token,
     type,
@@ -160,7 +146,6 @@ const loadAssets = async () => {
     );
 
     logger.debug("input assets loaded!");
-    //    logger.debug(`assets: ${JSON.stringify([...assets.entries()], null, 2)}`);
   });
 };
 
@@ -202,7 +187,8 @@ const readOrders = async () => {
 /**
  * Get the order price
  */
-const getOrderPrice = (data) => data?.quantity_with_fees;
+const getOrderPrice = (data) =>
+  toHumanAmount(data?.quantity_with_fees, data?.decimals);
 
 /**
  * Check if the order price match with the asset target price (several tokens)
@@ -240,12 +226,11 @@ const notifyMatchedOrders = async (matchedOrders) => {
   for (order of matchedOrders) {
     const assetName = order?.sell?.data?.properties?.name;
     const tokenName = getTokenName(order);
-    const amount = getOrderAmount(order);
+    const amount = getOrderPrice(order?.buy?.data);
     const url = `https://market.immutable.com/collections/${TOKEN_ADDRESS}/assets/${order.sell.data.token_id}`;
 
     notifier.notify({
       title: assetName,
-      timeout: 15,
       open: url,
       message: `${amount} ${tokenName}`,
       sound: true,

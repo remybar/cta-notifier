@@ -1,0 +1,12 @@
+{
+  "assets": [
+    {
+      "name": "Phoenix",
+      "image_filename": "194-fire-2-null-1.png",
+      "max_prices": [
+        { "token": "USDC", "value": 1000 },
+        { "token": "ETH", "value": 0.1 }
+      ]
+    }
+  ]
+}
